@@ -16,6 +16,7 @@ to be used with https://mcblockmarket.com
 * https://minecraft.gamepedia.com/NBT_format
 * https://web.archive.org/web/20110723210920/http://www.minecraft.net/docs/NBT.txt
 * https://minecraft.gamepedia.com/Chunk_format
+* https://github.com/jaquadro/NBTExplorer/releases/tag/v2.8.0-win
 
 # Notes
 r.-1.-1.mca is packaged with this.
