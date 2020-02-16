@@ -10,6 +10,23 @@
 class NBT
 {
 	/**
+	 * Class Constants
+	 */
+	const TAG_End = 0x00;
+	const TAG_Byte = 0x01;
+	const TAG_Short = 0x02;
+	const TAG_Int = 0x03;
+	const TAG_Long = 0x04;
+	const TAG_Float = 0x05;
+	const TAG_Double = 0x06;
+	const TAG_Byte_Array = 0x07;
+	const TAG_String = 0x08;
+	const TAG_List = 0x09;
+	const TAG_Compound = 0x0a;
+	const TAG_Int_Array = 0x0b;
+	const TAG_Long_Array = 0x0c;
+
+	/**
 	 * Some place to store the data so we can work on it in the class
 	 */
 	private static $nbt_data = null;
@@ -60,160 +77,70 @@ class NBT
 		self::$json = '{';
 		while (self::$nbt_data_offset < self::$nbt_data_length)
 		{
-			self::NBT2JSON(); /* This does all the work! */
+			/* This does all the work! */
+			self::NBT2JSON();
 		}
+		self::Clean_JSON();
 		return self::$json;
 	}
 
 	private static function NBT2JSON()
 	{
 		/* When this function is entered into, we're assuming the nbt_data_offset is pointed to a TAG_ID */
-		$tag_id = self::bin2dec(self::read8(self::$nbt_data_offset));
-		self::$nbt_data_offset++;
-		echo '[' . $tag_id . ']';
-		if ($tag_id == 0x00) /* TAG_End */
+		$tag_id = self::read_Tag_ID();
+		if ($tag_id == self::TAG_End)
 		{
-			echo "\n";
 			self::$json .= '}'; /* add json end_object tag */
+			/* Nothing happens, we're done */
 			return;
 		}
-		$tag_name_length = self::bin2dec(self::read16(self::$nbt_data_offset));
-		echo '[' . $tag_name_length . ']';
-		self::$nbt_data_offset += 2;
-		$tag_name = '';
-		for ($x = 0; $x < $tag_name_length; $x++)
+		$tag_name = self::read_Tag_Name();
+
+		switch ($tag_id)
 		{
-			$tag_name .= self::read8(self::$nbt_data_offset + $x);
+			case self::TAG_Byte:
+				$data = self::read_TAG_Byte();
+				break;
+			case self::TAG_Short:
+				$data = self::read_TAG_Short();
+				break;
+			case self::TAG_Int:
+				$data = self::read_TAG_Int();
+				break;
+			case self::TAG_Long:
+				$data = self::read_TAG_Long();
+				break;
+			case self::TAG_Float:
+				$data = self::read_TAG_Float();
+				break;
+			case self::TAG_Double:
+				$data = self::read_TAG_Double();
+				break;
+			case self::TAG_Byte_Array:
+				$data = self::read_TAG_Byte_Array();
+				break;
+			case self::TAG_String:
+				$data = self::read_TAG_String();
+				break;
+			case self::TAG_List:
+				$data = self::read_TAG_List();
+				break;
+			case self::TAG_Int_Array:
+				$data = self::read_TAG_Int_Array();
+				break;
+			case self::TAG_Long_Array:
+				$data = self::read_TAG_Long_Array();
+				break;
 		}
-		echo '[' . $tag_name . ']' . "\n";
-		self::$nbt_data_offset += $tag_name_length;
-		if ($tag_id == 0x01) /* TAG_Byte */
+		if ($tag_id == self::TAG_Compound)
 		{
-			$val = 0;
-			$val = self::bin2dec(self::read8(self::$nbt_data_offset));
-			if ($val > (pow(2, 7) - 1))
-			{
-				$val -= pow(2, 8); /* convert to unsigned */
-			}
-			self::$json .= "\"$tag_name\": $val,";
-			self::$nbt_data_offset += 1;
-		}
-		if ($tag_id == 0x02) /* TAG_Short */
-		{
-			$val = 0;
-			$val = self::bin2dec(self::read16(self::$nbt_data_offset));
-			if ($val > (pow(2, 15) - 1))
-			{
-				$val -= pow(2, 16); /* convert to unsigned */
-			}
-			self::$json .= "\"$tag_name\": $val,";
-			self::$nbt_data_offset += 2;
-		}
-		if ($tag_id == 0x03) /* TAG_Int */
-		{
-			$val = 0;
-			$val = intval(self::bin2dec(self::read32(self::$nbt_data_offset)));
-			if ($val > (pow(2, 31) - 1))
-			{
-				$val = $val - pow(2, 32);
-			}
-			self::$json .= "\"$tag_name\": $val,";
-			self::$nbt_data_offset += 4;
-		}
-		if ($tag_id == 0x04) /* TAG_Long */
-		{
-			/* TODO: In 64-bit systems this should automatically wrap. If not, we need to make it happen before bin2dec */
-			$val = self::bin2dec(self::read64(self::$nbt_data_offset));
-			self::$json .= "\"$tag_name\": $val,";
-			self::$nbt_data_offset += 8;
-		}
-		if ($tag_id == 0x05) /* TAG_Float */
-		{
-			self::$json .= "\"$tag_name\": \"0x05,TODO\",";
-			self::$nbt_data_offset += 4;
-		}
-		if ($tag_id == 0x06) /* TAG_Double */
-		{
-			self::$json .= "\"$tag_name\": \"0x06,TODO\",";
-			self::$nbt_data_offset += 8;
-		}
-		if ($tag_id == 0x07) /* TAG_Byte_Array */
-		{
-			$payload_length = self::bin2dec(self::read32(self::$nbt_data_offset));
-			self::$nbt_data_offset += 4;
-			/* An array of bytes */
-			$array_of_bytes = [];
-			for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
-			{
-				$val = self::bin2dec(self::read8(self::$nbt_data_offset));
-				if ($val > (pow(2, 7) - 1))
-				{
-					$val -= pow(2, 8); /* convert to unsigned */
-				}
-				$array_of_bytes[] = $val;
-				self::$nbt_data_offset++;
-			}
-			$payload_bytes = implode(',', $array_of_bytes);
-			self::$json .= "\"$tag_name\": [$payload_bytes],";
-		}
-		if ($tag_id == 0x08) /* TAG_String */
-		{
-			$payload_length = self::bin2dec(self::read16(self::$nbt_data_offset));
-			self::$nbt_data_offset += 2;
-			/* UTF-8 String */
-			$utf8_string = '';
-			for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
-			{
-				$utf8_string .= self::read8(self::$nbt_data_offset);
-				self::$nbt_data_offset++;
-			}
-			self::$json .= "\"$tag_name\": \"$utf8_string\",";
-		}
-		if ($tag_id == 0x09) /* TAG_List */
-		{
-			self::$json .= "\"$tag_name\": \"0x09,TODO\",";
-			/* TAG_Byte payload */
-			$payload
-		}
-		if ($tag_id == 0x0a) /* TAG_Compound */
-		{
-			self::$json .= "\"$tag_name\": {";
+			self::$json .= '"' . $tag_name . '": {';
 			self::NBT2JSON();
-			self::$json .= "},";
+			self::$json .= '},';
 		}
-		if ($tag_id == 0x0b) /* TAG_Int_Array */
+		else
 		{
-			$payload_length = self::bin2dec(self::read32(self::$nbt_data_offset));
-			self::$nbt_data_offset += 4;
-			/* An array of bytes */
-			$array_of_ints = [];
-			for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
-			{
-				$val = self::bin2dec(self::read32(self::$nbt_data_offset));
-				if ($val > (pow(2, 31) - 1))
-				{
-					$val -= pow(2, 32); /* convert to unsigned */
-				}
-				$array_of_ints[] = $val;
-				self::$nbt_data_offset += 4;
-			}
-			$payload_bytes = implode(',', $array_of_ints);
-			self::$json .= "\"$tag_name\": [$payload_bytes],";
-		}
-		if ($tag_id == 0x0c) /* TAG_Long_Array */
-		{
-			$payload_length = self::bin2dec(self::read32(self::$nbt_data_offset));
-			self::$nbt_data_offset += 4;
-			/* An array of bytes */
-			$array_of_longs = [];
-			for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
-			{
-				$val = self::bin2dec(self::read64(self::$nbt_data_offset));
-				$array_of_longs[] = $val;
-				self::$nbt_data_offset += 8;
-			}
-			$payload_bytes = implode(',', $array_of_longs);
-			self::$json .= "\"$tag_name\": [$payload_bytes],";
+			self::$json .= '"' . $tag_name . '": ' . $data . ',';
 		}
 	}
 
@@ -283,5 +210,187 @@ class NBT
 			if (( $byte & 0x01) == 0x01) { $decimal += 1; }
 		}
 		return (int)$decimal;
+	}
+
+	/**
+	 * Reads the current byte for the tag
+	 * This should resolve to one of the above TAG_* constants
+	 *
+	 * @return integer the TAG_* constant
+	 * @throws Exception if we don't support the TAG_* constant
+	 */
+	private static function read_Tag_ID()
+	{
+		$tag_id = self::bin2dec(self::read8(self::$nbt_data_offset));
+		if (!(($tag_id >= self::TAG_End) && ($tag_id <= self::TAG_Long_Array)))
+		{
+			throw new Exception('read_Tag_ID, invalid tagid [' . $tag_id . '] at offset [' . self::$nbt_data_offset . ']');
+		}
+		self::$nbt_data_offset++;
+		return $tag_id;
+	}
+
+	/**
+	 * Tags (except for TAG_End) have names. Return the name.
+	 *
+	 * @return string Name of Tag
+	 */
+	private static function read_Tag_Name()
+	{
+		$tag_name = '';
+		$tag_name_length = self::bin2dec(self::read16(self::$nbt_data_offset));
+		self::$nbt_data_offset += 2;
+		for ($x = 0; $x < $tag_name_length; $x++)
+		{
+			$tag_name .= self::read8(self::$nbt_data_offset + $x);
+		}
+		self::$nbt_data_offset += $tag_name_length;
+		return $tag_name;
+	}
+
+	private static function read_TAG_Byte()
+	{
+		$val = 0;
+		$val = self::bin2dec(self::read8(self::$nbt_data_offset));
+		/* convert to unsigned */
+		if ($val > (pow(2, 7) - 1))
+		{
+			$val -= pow(2, 8);
+		}
+		self::$nbt_data_offset += 1;
+		return $val;
+	}
+
+	private static function read_TAG_Short()
+	{
+		$val = 0;
+		$val = self::bin2dec(self::read16(self::$nbt_data_offset));
+		/* convert to unsigned */
+		if ($val > (pow(2, 15) - 1))
+		{
+			$val -= pow(2, 16);
+		}
+		self::$nbt_data_offset += 2;
+		return $val;
+	}
+
+	private static function read_TAG_Int()
+	{
+		$val = 0;
+		$val = intval(self::bin2dec(self::read32(self::$nbt_data_offset)));
+		/* convert to unsigned */
+		if ($val > (pow(2, 31) - 1))
+		{
+			$val = $val - pow(2, 32);
+		}
+		self::$nbt_data_offset += 4;
+		return $val;
+	}
+
+	private static function read_TAG_Long()
+	{
+		$val = 0;
+		$val = self::bin2dec(self::read64(self::$nbt_data_offset));
+		/* TODO: In 64-bit systems this should automatically wrap. If not, we need to make it happen before bin2dec */
+		self::$nbt_data_offset += 8;
+		return $val;
+	}
+
+	private static function read_TAG_Float()
+	{
+		/* TODO: Integrate floating point */
+		self::$nbt_data_offset += 4;
+		return "0.0";
+	}
+
+	private static function read_TAG_Double()
+	{
+		/* TODO: Integrate floating point */
+		self::$nbt_data_offset += 8;
+		return "0.0";
+	}
+
+	private static function read_TAG_Byte_Array()
+	{
+		$payload_length = self::read_TAG_Int();
+		/* An array of bytes */
+		$array_of_bytes = [];
+		for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
+		{
+			$val = self::read_TAG_Byte();
+			$array_of_bytes[] = $val;
+		}
+		$payload_bytes = '[' . implode(',', $array_of_bytes) . ']';
+		return $payload_bytes;
+	}
+
+	private static function read_TAG_String()
+	{
+		$payload_length = self::read_TAG_Short();
+		/* UTF-8 String */
+		$utf8_string = '';
+		for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
+		{
+			$utf8_string .= self::read8(self::$nbt_data_offset);
+			self::$nbt_data_offset++;
+		}
+		return '"' . $utf8_string . '"';
+	}
+
+	private static function read_TAG_List()
+	{
+		/* TAG_Byte payload */
+		$payload_tagid = self::read_TAG_Byte();
+		$payload_size = self::read_TAG_Int();
+
+		/* TODO: fix this mess */
+		self::$json .= "\"$tag_name\": ["; /* Start of List */
+		if ($payload_tagid == 0x0a)
+		{
+			for ($payload_loop = 0; $payload_loop < $payload_size; $payload_loop++)
+			{
+				echo " {TAG_List[$payload_loop/$payload_size]}\n";
+				self::NBT2JSON();
+			}
+		}
+		self::$json .= "\"$tag_name\": ],"; /* End of List */
+		return '[]';
+	}
+
+	private static function read_TAG_Int_Array()
+	{
+		$payload_length = self::read_TAG_Int();
+		/* An array of integers */
+		$array_of_ints = [];
+		for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
+		{
+			$val = self::read_TAG_Int();
+			$array_of_ints[] = $val;
+		}
+		$payload_bytes = implode(',', $array_of_ints);
+		return '[' . $payload_bytes . ']';
+	}
+
+	private static function read_TAG_Long_Array()
+	{
+		$payload_length = self::read_TAG_Int();
+		/* An array of longs */
+		$array_of_longs = [];
+		for ($payload_index = 0; $payload_index < $payload_length; $payload_index++)
+		{
+			$val = self::read_TAG_Long();
+			$array_of_longs[] = $val;
+		}
+		$payload_bytes = implode(',', $array_of_longs);
+		return '[' . $payload_bytes . ']';
+	}
+
+	/**
+	 * We're creating bad json with our above routines, so we clean it up
+	 */
+	private static function Clean_JSON()
+	{
+		self::$json = str_replace(',}', '}', self::$json);
+		self::$json = str_replace('],}', ']}', self::$json);
 	}
 }
