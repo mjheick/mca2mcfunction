@@ -90,21 +90,21 @@ class MCA {
 	 * Convert a binary "string" to a usable number
 	 * big-endien
 	 */
-	public static function bin2dec($data)
+	public static function bin2dec($binary_data)
 	{
 		$decimal = 0;
-		while (strlen($data) > 0)
+		while (strlen($binary_data) > 0)
 		{
 			$decimal *= 256; /* shift result left by 8 bytes */
-			$byte = substr($data, 0, 1);
+			$byte = substr($binary_data, 0, 1);
 			$byte = hexdec('0x' . bin2hex($byte));
-			if (strlen($data) > 1)
+			if (strlen($binary_data) > 1)
 			{
-				$data = substr($data, 1);
+				$binary_data = substr($binary_data, 1);
 			}
 			else
 			{
-				$data = "";
+				$binary_data = "";
 			}
 			if (( $byte & 0x80) == 0x80) { $decimal += 128; }
 			if (( $byte & 0x40) == 0x40) { $decimal += 64; }
