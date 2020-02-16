@@ -80,18 +80,24 @@ class NBT
 			/* This does all the work! */
 			self::NBT2JSON();
 		}
+		self::$json .= '}';
 		self::Clean_JSON();
 		return self::$json;
 	}
 
-	private static function NBT2JSON()
+	private static function NBT2JSON($tag_id_override = null)
 	{
 		/* When this function is entered into, we're assuming the nbt_data_offset is pointed to a TAG_ID */
-		$tag_id = self::read_Tag_ID();
+		if (is_null($tag_id_override))
+		{
+			$tag_id = self::read_Tag_ID();
+		}
+		else
+		{
+			$tag_id = $tag_id_override;
+		}
 		if ($tag_id == self::TAG_End)
 		{
-			self::$json .= '}'; /* add json end_object tag */
-			/* Nothing happens, we're done */
 			return;
 		}
 		$tag_name = self::read_Tag_Name();
