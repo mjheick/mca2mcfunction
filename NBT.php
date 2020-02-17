@@ -78,27 +78,25 @@ class NBT
 		while (self::$nbt_data_offset < self::$nbt_data_length)
 		{
 			/* This does all the work! */
-			self::NBT2JSON();
+			$data = self::NBT2JSON();
+			if (strlen(self::$json) > 1)
+			{
+				self::$json .= ',';
+			}
+			self::$json .= $data;
 		}
 		self::$json .= '}';
 		self::Clean_JSON();
 		return self::$json;
 	}
 
-	private static function NBT2JSON($tag_id_override = null)
+	private static function NBT2JSON()
 	{
 		/* When this function is entered into, we're assuming the nbt_data_offset is pointed to a TAG_ID */
-		if (is_null($tag_id_override))
-		{
-			$tag_id = self::read_Tag_ID();
-		}
-		else
-		{
-			$tag_id = $tag_id_override;
-		}
+		$tag_id = self::read_Tag_ID();
 		if ($tag_id == self::TAG_End)
 		{
-			return;
+			return null;
 		}
 		$tag_name = self::read_Tag_Name();
 
@@ -131,23 +129,22 @@ class NBT
 			case self::TAG_List:
 				$data = self::read_TAG_List();
 				break;
+			case self::TAG_Compound:
+				$data = self::read_TAG_Compound();
+				break;
 			case self::TAG_Int_Array:
 				$data = self::read_TAG_Int_Array();
 				break;
 			case self::TAG_Long_Array:
 				$data = self::read_TAG_Long_Array();
 				break;
+			default:
+				$data = 'unset';
+				break;
 		}
-		if ($tag_id == self::TAG_Compound)
-		{
-			self::$json .= '"' . $tag_name . '": {';
-			self::NBT2JSON();
-			self::$json .= '},';
-		}
-		else
-		{
-			self::$json .= '"' . $tag_name . '": ' . $data . ',';
-		}
+
+		$tag_data = '"' . $tag_name . '": ' . $data;
+		return $tag_data;
 	}
 
 	/**
@@ -343,26 +340,6 @@ class NBT
 		return '"' . $utf8_string . '"';
 	}
 
-	private static function read_TAG_List()
-	{
-		/* TAG_Byte payload */
-		$payload_tagid = self::read_TAG_Byte();
-		$payload_size = self::read_TAG_Int();
-
-		/* TODO: fix this mess */
-		self::$json .= "\"$tag_name\": ["; /* Start of List */
-		if ($payload_tagid == 0x0a)
-		{
-			for ($payload_loop = 0; $payload_loop < $payload_size; $payload_loop++)
-			{
-				echo " {TAG_List[$payload_loop/$payload_size]}\n";
-				self::NBT2JSON();
-			}
-		}
-		self::$json .= "\"$tag_name\": ],"; /* End of List */
-		return '[]';
-	}
-
 	private static function read_TAG_Int_Array()
 	{
 		$payload_length = self::read_TAG_Int();
@@ -389,6 +366,80 @@ class NBT
 		}
 		$payload_bytes = implode(',', $array_of_longs);
 		return '[' . $payload_bytes . ']';
+	}
+
+	private static function read_TAG_Compound()
+	{
+		$compound_data = '';
+		$recursive_data = self::NBT2JSON();
+		while (!is_null($recursive_data))
+		{
+			if (!is_null($recursive_data))
+			{
+				if (strlen($compound_data) > 0)
+				{
+					$compound_data .= ',';
+				}
+				$compound_data .= $recursive_data;
+			}
+			$recursive_data = self::NBT2JSON();
+		} 
+		return '{' . $compound_data . '}';
+	}
+
+	private static function read_TAG_List()
+	{
+		$payload_tagid = self::read_TAG_Byte();
+		$payload_size = self::read_TAG_Int();
+		$payload_items = [];
+		for ($payload_x = 0; $payload_x < $payload_size; $payload_x++)
+		{
+			switch ($payload_tagid)
+			{
+				case self::TAG_Byte:
+					$data = self::read_TAG_Byte();
+					break;
+				case self::TAG_Short:
+					$data = self::read_TAG_Short();
+					break;
+				case self::TAG_Int:
+					$data = self::read_TAG_Int();
+					break;
+				case self::TAG_Long:
+					$data = self::read_TAG_Long();
+					break;
+				case self::TAG_Float:
+					$data = self::read_TAG_Float();
+					break;
+				case self::TAG_Double:
+					$data = self::read_TAG_Double();
+					break;
+				case self::TAG_Byte_Array:
+					$data = self::read_TAG_Byte_Array();
+					break;
+				case self::TAG_String:
+					$data = self::read_TAG_String();
+					break;
+				case self::TAG_List:
+					$data = self::read_TAG_List();
+					break;
+				case self::TAG_Compound:
+					$data = self::read_TAG_Compound();
+					break;
+				case self::TAG_Int_Array:
+					$data = self::read_TAG_Int_Array();
+					break;
+				case self::TAG_Long_Array:
+					$data = self::read_TAG_Long_Array();
+					break;
+				default:
+					$data = 'unset';
+					break;
+			}
+			$payload_items[] = $data;
+		}
+		$payload_list = '[' . implode(',', $payload_items) . ']';
+		return $payload_list;
 	}
 
 	/**

@@ -25,4 +25,6 @@ file_put_contents("data.30.30.nbt", MCA::readChunk(30, 30));
 $chunk_nbt = MCA::readChunk(30, 30);
 
 $json = NBT::getJSON($chunk_nbt);
-echo $json . "\n";
+$data = json_decode($json, true);
+
+var_export($data);
