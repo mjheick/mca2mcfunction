@@ -16,6 +16,7 @@
 
 require_once('MCA.php');
 require_once('NBT.php');
+require_once('MCFunction.php');
 
 # Region filename to load up
 $mca_file = "./r.-1.-1.mca";
@@ -25,6 +26,7 @@ file_put_contents("data.30.30.nbt", MCA::readChunk(30, 30));
 $chunk_nbt = MCA::readChunk(30, 30);
 
 $json = NBT::getJSON($chunk_nbt);
-$data = json_decode($json, true);
 
-var_export($data);
+MCFunction::loadNBTJSON($json);
+$stuff = MCFunction::getChunk(-2, 0, -2);
+var_export($stuff);
