@@ -714,7 +714,7 @@ class MCWorld
 
 	private static function readBlockIndex($block_index, &$palette, &$blockstates)
 	{
-		$bits_per_index = self::bitlength(count($palette));
+		$bits_per_index = ceil(log(count($palette),2));
 
 		$indexdata = self::bitarray($block_index, $bits_per_index, 64);
 		/* $indexdata tells us  */
@@ -727,26 +727,6 @@ class MCWorld
 		}
 
 		return $palette[$byte];
-	}
-
-	/**
-	 * This returns back a bit length based on the integer size of the palette
-	 * Minecraft stores block indexes as compressed as possible
-	 *
-	 * @param integer palette size
-	 * @return integer bit length
-	 */
-	private static function bitlength($palette_length)
-	{
-		$bit_length = 0;
-
-		$proposed_bit_length = 14; /* Decrement from this */
-		while (pow(2, $proposed_bit_length) > $palette_length)
-		{
-			$proposed_bit_length--;
-		}
-		$bit_length = $proposed_bit_length + 1;
-		return $bit_length;
 	}
 
 
