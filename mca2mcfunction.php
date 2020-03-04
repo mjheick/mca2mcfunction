@@ -29,4 +29,13 @@ $json = NBT::getJSON($chunk_nbt);
 
 MCFunction::loadNBTJSON($json);
 $stuff = MCFunction::getChunk(-2, 0, -2);
-var_export($stuff);
+foreach ($stuff as $coord => $blockdata)
+{
+	list($x, $y, $z) = explode(',', $coord);
+	$block = $blockdata['Name'];
+	if ($block != 'minecraft:air')
+	{
+		//echo "$x,$y,$z=$block\n";
+		echo "setblock ~$x ~$y ~$z $block\n";
+	}
+}
