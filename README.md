@@ -5,11 +5,9 @@ a mcfunction file to rebuild what we see in the world in any other world.
 to be used with https://mcblockmarket.com
 
 # TODO
-* We need to be able to parse NBT
-* We need to be able to read coords and entities from NBT
-* Dumping to mcfunction format from json
 * We need to be able to calculate world xyz -> region.mca -> nbt section for start + end
-* Deduplicate functions in static classes, passing by reference
+* Be able to give arbitrary x1y1z1-x2y2yz2 and derive blocks from that to .mcfunction
+* Debug our overall block extraction algorithm
 
 # Links
 * https://minecraft.gamepedia.com/Region_file_format
@@ -21,4 +19,4 @@ to be used with https://mcblockmarket.com
 # Notes
 r.-1.-1.mca is packaged with this.
 
-Our test model was in r.-1.-1.mca in chunk x=30, y=30 (saved as data.30.30.nbt)
+Our test model was in r.-1.-1.mca in chunk -2, 0, -2
