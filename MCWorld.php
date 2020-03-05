@@ -219,7 +219,7 @@ class MCWorld
 		$decimal = 0;
 		while (strlen($binary_data) > 0)
 		{
-			$decimal *= 256; /* shift result left by 8 bytes */
+			$decimal = $decimal << 8;
 			$byte = substr($binary_data, 0, 1);
 			$byte = hexdec('0x' . bin2hex($byte));
 			if (strlen($binary_data) > 1)
@@ -230,16 +230,18 @@ class MCWorld
 			{
 				$binary_data = "";
 			}
-			if (( $byte & 0x80) == 0x80) { $decimal += 128; }
-			if (( $byte & 0x40) == 0x40) { $decimal += 64; }
-			if (( $byte & 0x20) == 0x20) { $decimal += 32; }
-			if (( $byte & 0x10) == 0x10) { $decimal += 16; }
-			if (( $byte & 0x08) == 0x08) { $decimal += 8; }
-			if (( $byte & 0x04) == 0x04) { $decimal += 4; }
-			if (( $byte & 0x02) == 0x02) { $decimal += 2; }
-			if (( $byte & 0x01) == 0x01) { $decimal += 1; }
+			$byte2add = 0;
+			if (( $byte & 0x80) == 0x80) { $byte2add += 128; }
+			if (( $byte & 0x40) == 0x40) { $byte2add += 64; }
+			if (( $byte & 0x20) == 0x20) { $byte2add += 32; }
+			if (( $byte & 0x10) == 0x10) { $byte2add += 16; }
+			if (( $byte & 0x08) == 0x08) { $byte2add += 8; }
+			if (( $byte & 0x04) == 0x04) { $byte2add += 4; }
+			if (( $byte & 0x02) == 0x02) { $byte2add += 2; }
+			if (( $byte & 0x01) == 0x01) { $byte2add += 1; }
+			$decimal = $decimal | $byte2add;
 		}
-		return (int)$decimal;
+		return $decimal;
 	}
 
 	/**
