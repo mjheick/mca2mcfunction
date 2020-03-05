@@ -149,13 +149,11 @@ class MCWorld
 	private static function readMCA($filename)
 	{
 		$mca_data = null;
-		$handle = fopen($filename, 'rb');
-		if (!$handle)
+		if (!file_exists($filename))
 		{
 			throw new Exception('file ' . $filename . ' cannot be opened for read');
 		}
-		$mca_data = fread($handle, filesize($filename));
-		fclose($handle);
+		$mca_data = file_get_contents($filename);
 		return $mca_data;
 	}
 
