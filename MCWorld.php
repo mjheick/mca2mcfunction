@@ -717,15 +717,22 @@ class MCWorld
 		$bits_per_index = ceil(log(count($palette),2));
 
 		$indexdata = self::bitarray($block_index, $bits_per_index, 64);
-		/* $indexdata tells us  */
-		$byte = ($blockstates[$indexdata['byte']] >> $indexdata['shr-bits']) & $indexdata['finish-mask'];
+		/* Test for php limit limit limit, adjust it to unsigned so we don't get bad bit shift */
+		$byte_1 = $blockstates[$indexdata['byte']];
+		$shift_1 = $indexdata['shr-bits'];
+		if (($byte_1 < 0) && ($shift_1 > 0))
+		{
+			$byte_1 = $byte_1 >> 1;
+			$byte_1 = $byte_1 & 0x7FFFFFFFFFFFFFFF;
+			$shift_1 = $shift_1 - 1;
+		}
+		$byte = ($byte_1 >> $shift_1) & $indexdata['finish-mask'];
 		if (array_key_exists('shl-bits_3', $indexdata))
 		{
 			$byte_2 = ($blockstates[$indexdata['byte_2']] & $indexdata['finish-mask_2']) << $indexdata['shl-bits_3'];
 			$byte = $byte + $byte_2;
 			$byte = $byte & $indexdata['finish-mask'];
 		}
-
 		return $palette[$byte];
 	}
 
